@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Daily cruise schedule Telegram bot for Puerto de A Coruña
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: provided.al2023
+    Architectures:
+      - x86_64
+
+Parameters:
+  TelegramBotToken:
+    Type: String
+    NoEcho: true
+    Description: Telegram Bot token from @BotFather
+  TelegramChatId:
+    Type: String
+    Description: Telegram chat/group/channel ID to send messages to
+
+Resources:
+  CruiseScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cruise-schedule-bot
+      Handler: bootstrap
+      CodeUri: function.zip
+      Description: Fetches daily cruise schedule from Puerto de A Coruña and sends it via Telegram
+      Environment:
+        Variables:
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TELEGRAM_CHAT_ID: !Ref TelegramChatId
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 7 * * ? *)   # 07:00 UTC = 08:00 CET / 09:00 CEST
+            Description: Run every day at 07:00 UTC
+            Enabled: true
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt CruiseScheduleFunction.Arn
